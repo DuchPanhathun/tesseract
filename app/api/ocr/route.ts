@@ -5,6 +5,9 @@ import { promisify } from 'util';
 import path from 'path';
 import os from 'os';
 
+// Specify Node.js runtime
+export const runtime = 'nodejs';
+
 const execAsync = promisify(exec);
 
 export async function POST(request: NextRequest) {
