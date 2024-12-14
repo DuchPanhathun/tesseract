@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
+import * as fs from 'fs/promises';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     // Write the file to the temporary directory
     const bytes = await image.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
+    await fs.writeFile(filePath, buffer);
 
     // Run Tesseract OCR
     const { stdout, stderr } = await execAsync(`tesseract "${filePath}" stdout -l khm --psm 1`);
