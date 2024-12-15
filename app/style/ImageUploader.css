@@ -280,4 +280,76 @@
 .process-button:disabled {
   background-color: #6c757d;
   cursor: not-allowed;
+}
+
+.result-content {
+  width: 100%;
+}
+
+.text-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ocr-section {
+  background-color: #f5f5f5;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.ocr-section h5 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.translation-container {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.translation-error {
+  color: #ff4444;
+  margin-top: 0.5rem;
+}
+
+.translated-text {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.translated-text h4 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.translated-text pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 } 
+
+.summary-text {
+  background-color: #e8f4ff;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.summary-text h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #2c5282;
+}
+.translating-indicator {
+  color: #718096;
+  padding: 10px;
+  background-color: #f7fafc;
+  border-radius: 8px;
+  margin-top: 10px;
+  text-align: center;
+}

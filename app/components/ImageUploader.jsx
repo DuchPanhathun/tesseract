@@ -5,6 +5,7 @@ import axios from 'axios';
 import { saveAs } from 'file-saver';
 import CameraCapture from './CameraCapture';
 import '../style/ImageUploader.css';
+import TranslateResults from './TranslateResults';
 
 const ImageUploader = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -142,8 +143,16 @@ const ImageUploader = () => {
               <div className="results-list">
                 {results.map((result, index) => (
                   <div key={index} className="result-item">
-                    <h4 className="result-filename">{result.file}</h4>
-                    <pre className="result-text">{result.text}</pre>
+                    <div className="result-content">
+                      <h4 className="result-filename">{result.file}</h4>
+                      <div className="text-sections">
+                        <div className="ocr-section">
+                          <h5>OCR Text:</h5>
+                          <pre className="result-text">{result.text}</pre>
+                        </div>
+                        <TranslateResults text={result.text} />
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
