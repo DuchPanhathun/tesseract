@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import SummaryResults from './SummaryResults';
 import '../style/ImageUploader.css'
 
 const TranslateResults = ({ text, sourceLang = 'kh', targetLang = 'eng' }) => {
   const [translatedText, setTranslatedText] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
   const [error, setError] = useState(null);
-  const [summary, setSummary] = useState('');
 
   useEffect(() => {
     console.log('TranslateResults component mounted or updated');
@@ -16,18 +16,6 @@ const TranslateResults = ({ text, sourceLang = 'kh', targetLang = 'eng' }) => {
       translateText();
     }
   }, [text]);
-
-  const getSummary = async (translatedText) => {
-    try {
-      const response = await axios.post('/api/summarize', {
-        text: translatedText
-      });
-      setSummary(response.data.summary);
-    } catch (err) {
-      console.error('Summary error:', err.response ? err.response.data : err.message);
-      setError('Failed to get summary. Please try again later.');
-    }
-  };
 
   const translateText = async () => {
     if (!text) {
@@ -48,13 +36,10 @@ const TranslateResults = ({ text, sourceLang = 'kh', targetLang = 'eng' }) => {
       });
 
       console.log('Translation response:', response.data);
-
       console.log('Full response:', response);
 
       if (response.data && response.data.tgt_text && Array.isArray(response.data.tgt_text)) {
-        const translatedText = response.data.tgt_text[0];
-        setTranslatedText(translatedText);
-        await getSummary(translatedText);
+        setTranslatedText(response.data.tgt_text[0]);
       } else {
         console.error('Invalid response structure:', response.data);
         throw new Error('Invalid response format');
@@ -89,12 +74,7 @@ const TranslateResults = ({ text, sourceLang = 'kh', targetLang = 'eng' }) => {
         </div>
       )}
 
-      {summary && (
-        <div className="summary-text">
-          <h4>Summary:</h4>
-          <pre>{summary}</pre>
-        </div>
-      )}
+      {translatedText && <SummaryResults text={translatedText} />}
     </div>
   );
 };
