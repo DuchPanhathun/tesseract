@@ -345,6 +345,12 @@
   margin-bottom: 10px;
   color: #2c5282;
 }
+
+.summary-text pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+} 
 .translating-indicator {
   color: #718096;
   padding: 10px;

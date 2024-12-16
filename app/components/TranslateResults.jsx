@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import '../style/ImageUploader.css'
 
 const TranslateResults = ({ text, sourceLang = 'kh', targetLang = 'eng' }) => {
   const [translatedText, setTranslatedText] = useState('');
@@ -10,11 +11,11 @@ const TranslateResults = ({ text, sourceLang = 'kh', targetLang = 'eng' }) => {
   const [summary, setSummary] = useState('');
 
   useEffect(() => {
-    // Only trigger translation if there's text to translate
+    console.log('TranslateResults component mounted or updated');
     if (text) {
       translateText();
     }
-  }, [text]); // Dependency array includes text to trigger translation when text changes
+  }, [text]);
 
   const getSummary = async (translatedText) => {
     try {
@@ -37,7 +38,7 @@ const TranslateResults = ({ text, sourceLang = 'kh', targetLang = 'eng' }) => {
     setError(null);
 
     try {
-      console.log('Sending text for translation:', text); // Debug log
+      console.log('Sending text for translation:', text);
 
       const response = await axios.post('/api/translate', {
         src_lang: sourceLang,
@@ -45,14 +46,14 @@ const TranslateResults = ({ text, sourceLang = 'kh', targetLang = 'eng' }) => {
         input_text: [text]
       });
 
-      console.log('Translation response:', response.data); // Debug log
+      console.log('Translation response:', response.data);
 
       if (response.data && response.data.tgt_text && Array.isArray(response.data.tgt_text)) {
         const translatedText = response.data.tgt_text[0];
         setTranslatedText(translatedText);
-        await getSummary(translatedText); // Get summary after successful translation
+        await getSummary(translatedText);
       } else {
-        console.error('Invalid response structure:', response.data); // Debug log
+        console.error('Invalid response structure:', response.data);
         throw new Error('Invalid response format');
       }
     } catch (err) {
