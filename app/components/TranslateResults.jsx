@@ -24,7 +24,8 @@ const TranslateResults = ({ text, sourceLang = 'kh', targetLang = 'eng' }) => {
       });
       setSummary(response.data.summary);
     } catch (err) {
-      console.error('Summary error:', err);
+      console.error('Summary error:', err.response ? err.response.data : err.message);
+      setError('Failed to get summary. Please try again later.');
     }
   };
 
@@ -48,6 +49,8 @@ const TranslateResults = ({ text, sourceLang = 'kh', targetLang = 'eng' }) => {
 
       console.log('Translation response:', response.data);
 
+      console.log('Full response:', response);
+
       if (response.data && response.data.tgt_text && Array.isArray(response.data.tgt_text)) {
         const translatedText = response.data.tgt_text[0];
         setTranslatedText(translatedText);
@@ -58,8 +61,8 @@ const TranslateResults = ({ text, sourceLang = 'kh', targetLang = 'eng' }) => {
       }
     } catch (err) {
       const errorMessage = err.response?.data?.details || err.message;
-      setError(`Translation failed: ${errorMessage}`);
       console.error('Translation error:', err);
+      setError(`Translation failed: ${errorMessage}`);
     } finally {
       setIsTranslating(false);
     }

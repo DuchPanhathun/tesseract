@@ -9,9 +9,11 @@ interface RequestBody {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  let text: string | undefined;
   try {
-    const { text }: RequestBody = await request.json();
-    
+    const { text: requestText }: RequestBody = await request.json();
+    text = requestText;
+
     // Log the received text
     console.log('Received text for summarization:', text);
     
@@ -50,7 +52,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         error: 'Failed to generate summary',
         details: error instanceof Error ? error.message : String(error),
         debug: {
-          receivedText: text,
+          receivedText: text ?? 'No text received',
           pythonScriptPath: '/Users/thun/Desktop/Research-Document/llm_summary/chat.py'
         }
       },

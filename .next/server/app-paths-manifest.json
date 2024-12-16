@@ -1,3 +1,6 @@
 {
-  "/page": "app/page.js"
+  "/api/summarize/route": "app/api/summarize/route.js",
+  "/api/ocr/route": "app/api/ocr/route.js",
+  "/page": "app/page.js",
+  "/api/translate/route": "app/api/translate/route.js"
 }

@@ -20,8 +20,10 @@ const ImageUploader = () => {
       const newFiles = Array.from(event.target.files);
       setSelectedFiles(prev => [...prev, ...newFiles]);
       setReadyToProcess(true);
+      event.target.value = ''; // Reset file input after selection
     }
   };
+  
 
   const processFiles = async () => {
     setIsLoading(true);
