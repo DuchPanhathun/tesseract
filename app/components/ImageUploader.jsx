@@ -6,6 +6,7 @@ import { saveAs } from 'file-saver';
 import CameraCapture from './CameraCapture';
 import '../style/ImageUploader.css';
 import TranslateResults from './TranslateResults';
+import SummaryResults from './SummaryResults';
 
 const ImageUploader = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -14,6 +15,7 @@ const ImageUploader = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [showUploadMore, setShowUploadMore] = useState(false);
   const [readyToProcess, setReadyToProcess] = useState(false);
+  const [translatedTexts, setTranslatedTexts] = useState({});
 
   const handleFileChange = (event) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -152,7 +154,20 @@ const ImageUploader = () => {
                           <h5>OCR Text:</h5>
                           <pre className="result-text">{result.text}</pre>
                         </div>
-                        <TranslateResults text={result.text} />
+                        <TranslateResults 
+                          text={result.text} 
+                          onTranslationComplete={(translatedText) => {
+                            setTranslatedTexts(prev => ({
+                              ...prev,
+                              [result.file]: translatedText
+                            }));
+                          }}
+                        />
+                        {translatedTexts[result.file] && (
+                          <div className="translation-section">
+                            <SummaryResults text={translatedTexts[result.file]} />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

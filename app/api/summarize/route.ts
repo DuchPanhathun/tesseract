@@ -1,61 +1,92 @@
-import { NextResponse } from 'next/server';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { NextRequest, NextResponse } from 'next/server';
+import { v4 as uuidv4 } from 'uuid';
 
-const execAsync = promisify(exec);
+export const runtime = 'nodejs';
 
-interface RequestBody {
-  text: string;
-}
+// Cache for storing results and preventing duplicate processing
+const cache = new Map();
+const processingRequests = new Set();
 
-export async function POST(request: Request): Promise<NextResponse> {
-  let text: string | undefined;
+export async function POST(request: NextRequest) {
+  const requestId = uuidv4();
+  
   try {
-    const { text: requestText }: RequestBody = await request.json();
-    text = requestText;
-
-    // Log the received text
-    console.log('Received text for summarization:', text);
+    // Get the raw request text
+    const rawText = await request.text();
     
-    // Use the absolute path to the Python script
-    const pythonScriptPath = '/Users/thun/Desktop/Research-Document/llm_summary/chat.py';
-    
-    // Construct the command
-    const command = `python3 "${pythonScriptPath}" "${text}"`;
-    console.log('Executing command:', command);
-    
-    // Execute Python script with the absolute path
-    const { stdout, stderr } = await execAsync(command);
-
-    // Log the Python script output
-    console.log('Python stdout:', stdout);
-    if (stderr) {
-      console.log('Python stderr:', stderr);
+    // Try to parse the JSON
+    let body;
+    try {
+      body = rawText ? JSON.parse(rawText) : {};
+    } catch (e) {
+      console.error(`[${requestId}] Failed to parse request body:`, e);
+      return NextResponse.json({ 
+        error: 'Invalid JSON in request'
+      }, { status: 400 });
     }
 
-    const summary = stdout.trim();
-    console.log('Generated summary:', summary);
+    const { text } = body;
+    
+    // Skip empty text
+    if (!text?.trim()) {
+      return NextResponse.json({ summary: '' });
+    }
 
-    return NextResponse.json({ 
-      summary,
-      debug: {
-        receivedText: text,
-        command: command,
-        stdout: stdout,
-        stderr: stderr
+    // Generate cache key from the text
+    const cacheKey = text.trim();
+
+    // Check cache first
+    if (cache.has(cacheKey)) {
+      console.log(`[${requestId}] Returning cached summary`);
+      return NextResponse.json(cache.get(cacheKey));
+    }
+
+    // Check if this text is already being processed
+    if (processingRequests.has(cacheKey)) {
+      console.log(`[${requestId}] Request already in progress, waiting...`);
+      // Wait for a short time and check cache again
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (cache.has(cacheKey)) {
+        return NextResponse.json(cache.get(cacheKey));
       }
-    });
+    }
+
+    // Mark this request as being processed
+    processingRequests.add(cacheKey);
+
+    try {
+      // Your existing summarization logic here
+      const { exec } = require('child_process');
+      const util = require('util');
+      const execPromise = util.promisify(exec);
+
+      console.log('Received text for summarization:', text);
+
+      const pythonScript = process.env.PYTHON_SCRIPT_PATH || '/Users/thun/Desktop/Research-Document/llm_summary/chat.py';
+      const command = `python3 "${pythonScript}" "${text.replace(/"/g, '\\"')}"`;
+      
+      console.log('Executing command:', command);
+      
+      const { stdout, stderr } = await execPromise(command);
+      
+      console.log('Python stdout:', stdout);
+      console.log('Python stderr:', stderr);
+      
+      const result = { summary: stdout };
+      
+      // Cache the result
+      cache.set(cacheKey, result);
+      
+      return NextResponse.json(result);
+    } finally {
+      // Remove from processing set when done
+      processingRequests.delete(cacheKey);
+    }
+    
   } catch (error) {
-    console.error('Summarization error:', error);
+    console.error(`[${requestId}] Error:`, error);
     return NextResponse.json(
-      { 
-        error: 'Failed to generate summary',
-        details: error instanceof Error ? error.message : String(error),
-        debug: {
-          receivedText: text ?? 'No text received',
-          pythonScriptPath: '/Users/thun/Desktop/Research-Document/llm_summary/chat.py'
-        }
-      },
+      { error: 'Summarization failed', details: error.message },
       { status: 500 }
     );
   }
