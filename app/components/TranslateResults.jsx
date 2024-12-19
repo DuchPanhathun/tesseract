@@ -24,11 +24,11 @@ const TranslateResults = ({ text, sourceLang = 'kh', targetLang = 'eng', onTrans
   const [isTranslating, setIsTranslating] = useState(false);
   const [error, setError] = useState(null);
   const [translatedText, setTranslatedText] = useState('');
+  const [queuePosition, setQueuePosition] = useState(0);
   const previousTextRef = useRef('');
   const translationInProgressRef = useRef(false);
 
   const performTranslation = useCallback(async () => {
-    // Skip if already translating or text hasn't changed
     if (translationInProgressRef.current || 
         text === previousTextRef.current || 
         !text?.trim()) {
@@ -46,6 +46,10 @@ const TranslateResults = ({ text, sourceLang = 'kh', targetLang = 'eng', onTrans
         input_text: [text]
       });
 
+      if (response.data.waitTime) {
+        setQueuePosition(Math.ceil(response.data.waitTime / 1000));
+      }
+
       const translated = response.data.translate_text?.[0] || response.data.tgt_text?.[0];
       if (translated) {
         onTranslationComplete(translated);
@@ -59,6 +63,7 @@ const TranslateResults = ({ text, sourceLang = 'kh', targetLang = 'eng', onTrans
     } finally {
       setIsTranslating(false);
       translationInProgressRef.current = false;
+      setQueuePosition(0);
     }
   }, [text, sourceLang, targetLang, onTranslationComplete]);
 
@@ -75,7 +80,9 @@ const TranslateResults = ({ text, sourceLang = 'kh', targetLang = 'eng', onTrans
         {isTranslating && (
           <div className="translating-indicator">
             <div className="translation-spinner"></div>
-            Translating...
+            {queuePosition > 0 ? 
+              `Waiting in queue (${queuePosition}s)...` : 
+              'Translating...'}
           </div>
         )}
       </div>

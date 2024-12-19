@@ -3,45 +3,18 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const runtime = 'nodejs';
 
-const cache = new Map(); // In-memory cache for rate limiting and deduplication
+const cache = new Map();
+const lastRequestTime = new Map();
+const DELAY_BETWEEN_REQUESTS = 30000; // 30 seconds in milliseconds
+const MAX_RETRIES = 3;
 
-export async function POST(request: NextRequest) {
-  const requestId = uuidv4();
-  console.log(`[${requestId}] Incoming request`);
+async function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
+async function makeTranslationRequest(body: any, retryCount = 0): Promise<Response> {
   try {
-    // Log raw request details
-    console.log(`[${requestId}] Request headers:`, Object.fromEntries(request.headers));
-    
-    // Get the raw request text first
-    const rawText = await request.text();
-    console.log(`[${requestId}] Raw request body:`, rawText);
-
-    // Try to parse the JSON manually
-    let body;
-    try {
-      body = rawText ? JSON.parse(rawText) : {};
-      console.log(`[${requestId}] Parsed request body:`, body);
-    } catch (e) {
-      console.error(`[${requestId}] Failed to parse request body:`, e);
-      return NextResponse.json({ 
-        error: 'Invalid JSON in request',
-        details: 'Request body could not be parsed as JSON'
-      }, { status: 400 });
-    }
-
-    if (!body?.input_text?.[0]?.trim()) {
-      console.log(`[${requestId}] Empty input text, skipping translation`);
-      return NextResponse.json({ tgt_text: [''] });
-    }
-
-    const cacheKey = JSON.stringify(body);
-    if (cache.has(cacheKey)) {
-      console.log(`[${requestId}] Returning cached result`);
-      return NextResponse.json(cache.get(cacheKey));
-    }
-
-    // Make the external API request
+    console.log(`Making translation request attempt ${retryCount + 1}`);
     const response = await fetch('https://translatekh.mptc.gov.kh/', {
       method: 'POST',
       headers: {
@@ -70,42 +43,79 @@ export async function POST(request: NextRequest) {
       })
     });
 
-    // Check response status
     if (!response.ok) {
-      throw new Error(`API responded with status ${response.status}`);
+      console.error(`Request failed with status ${response.status}`);
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
+      
+      if (retryCount < MAX_RETRIES) {
+        console.log(`Attempt ${retryCount + 1} failed, waiting ${DELAY_BETWEEN_REQUESTS/1000} seconds before retry...`);
+        await delay(DELAY_BETWEEN_REQUESTS);
+        return makeTranslationRequest(body, retryCount + 1);
+      }
+      throw new Error(`API responded with status ${response.status}: ${errorText}`);
     }
 
+    console.log(`Translation request ${retryCount + 1} successful`);
+    return response;
+  } catch (error) {
+    console.error(`Translation attempt ${retryCount + 1} error:`, error);
+    
+    if (retryCount < MAX_RETRIES) {
+      console.log(`Attempt ${retryCount + 1} failed, waiting ${DELAY_BETWEEN_REQUESTS/1000} seconds before retry...`);
+      await delay(DELAY_BETWEEN_REQUESTS);
+      return makeTranslationRequest(body, retryCount + 1);
+    }
+    throw error;
+  }
+}
+
+export async function POST(request: NextRequest) {
+  const requestId = uuidv4();
+  console.log(`[${requestId}] Incoming request`);
+
+  try {
+    const rawText = await request.text();
+    const body = rawText ? JSON.parse(rawText) : {};
+
+    if (!body?.input_text?.[0]?.trim()) {
+      console.log(`[${requestId}] Empty input text, skipping translation`);
+      return NextResponse.json({ tgt_text: [''] });
+    }
+
+    const cacheKey = JSON.stringify(body);
+    if (cache.has(cacheKey)) {
+      console.log(`[${requestId}] Returning cached result`);
+      return NextResponse.json(cache.get(cacheKey));
+    }
+
+    // Check if we need to wait before making a new request
+    const now = Date.now();
+    const lastRequest = lastRequestTime.get('translate') || 0;
+    const timeSinceLastRequest = now - lastRequest;
+
+    if (timeSinceLastRequest < DELAY_BETWEEN_REQUESTS) {
+      const waitTime = DELAY_BETWEEN_REQUESTS - timeSinceLastRequest;
+      console.log(`[${requestId}] Rate limiting: waiting ${waitTime}ms`);
+      await delay(waitTime);
+    }
+
+    // Update last request time
+    lastRequestTime.set('translate', Date.now());
+
+    const response = await makeTranslationRequest(body);
     const responseText = await response.text();
-    console.log(`[${requestId}] Raw API response:`, responseText);
-
-    // Validate response text
-    if (!responseText?.trim()) {
-      throw new Error('Empty response from translation API');
-    }
-
-    let data;
-    try {
-      data = JSON.parse(responseText);
-      console.log(`[${requestId}] Parsed response:`, data);
-    } catch (e) {
-      throw new Error(`Failed to parse response: ${responseText}`);
-    }
-
-    // Validate parsed data
-    if (!data || !Array.isArray(data.translate_text)) {
-      throw new Error('Invalid response structure from translation API');
-    }
+    let data = JSON.parse(responseText);
 
     const mappedData = {
       ...data,
       tgt_text: data.translate_text,
+      waitTime: timeSinceLastRequest < DELAY_BETWEEN_REQUESTS ? DELAY_BETWEEN_REQUESTS - timeSinceLastRequest : 0
     };
 
-    // Cache only valid responses
     cache.set(cacheKey, mappedData);
-    console.log(`[${requestId}] Result cached`);
-
     return NextResponse.json(mappedData);
+
   } catch (error) {
     console.error(`[${requestId}] Translation Error:`, error);
     return NextResponse.json(
