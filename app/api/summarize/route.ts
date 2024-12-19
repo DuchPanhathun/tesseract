@@ -3,18 +3,20 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const runtime = 'nodejs';
 
-// Cache for storing results and preventing duplicate processing
 const cache = new Map();
 const processingRequests = new Set();
+const DELAY_BETWEEN_REQUESTS = 30000; // 30 seconds delay
+const lastRequestTime = new Map();
+
+async function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 export async function POST(request: NextRequest) {
   const requestId = uuidv4();
   
   try {
-    // Get the raw request text
     const rawText = await request.text();
-    
-    // Try to parse the JSON
     let body;
     try {
       body = rawText ? JSON.parse(rawText) : {};
@@ -27,66 +29,72 @@ export async function POST(request: NextRequest) {
 
     const { text } = body;
     
-    // Skip empty text
     if (!text?.trim()) {
       return NextResponse.json({ summary: '' });
     }
 
-    // Generate cache key from the text
     const cacheKey = text.trim();
 
     // Check cache first
     if (cache.has(cacheKey)) {
       console.log(`[${requestId}] Returning cached summary`);
-      return NextResponse.json(cache.get(cacheKey));
+      return NextResponse.json({ summary: cache.get(cacheKey) });
     }
 
-    // Check if this text is already being processed
-    if (processingRequests.has(cacheKey)) {
-      console.log(`[${requestId}] Request already in progress, waiting...`);
-      // Wait for a short time and check cache again
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (cache.has(cacheKey)) {
-        return NextResponse.json(cache.get(cacheKey));
-      }
+    // Check if we need to wait before processing
+    const now = Date.now();
+    const lastRequest = lastRequestTime.get('summarize') || 0;
+    const timeSinceLastRequest = now - lastRequest;
+
+    if (timeSinceLastRequest < DELAY_BETWEEN_REQUESTS) {
+      const waitTime = DELAY_BETWEEN_REQUESTS - timeSinceLastRequest;
+      console.log(`[${requestId}] Queue delay: waiting ${Math.ceil(waitTime/1000)}s`);
+      await delay(waitTime);
     }
 
     // Mark this request as being processed
-    processingRequests.add(cacheKey);
+    lastRequestTime.set('summarize', Date.now());
 
     try {
-      // Your existing summarization logic here
       const { exec } = require('child_process');
       const util = require('util');
       const execPromise = util.promisify(exec);
 
-      console.log('Received text for summarization:', text);
+      console.log(`[${requestId}] Processing summary request`);
 
       const pythonScript = process.env.PYTHON_SCRIPT_PATH || '/Users/thun/Desktop/Research-Document/llm_summary/chat.py';
-      const command = `python3 "${pythonScript}" "${text.replace(/"/g, '\\"')}"`;
+      // Properly escape the text for shell command
+      const escapedText = text.replace(/"/g, '\\"').replace(/\n/g, ' ');
+      const command = `python3 "${pythonScript}" "${escapedText}"`;
       
-      console.log('Executing command:', command);
+      console.log(`[${requestId}] Executing command:`, command);
       
       const { stdout, stderr } = await execPromise(command);
       
-      console.log('Python stdout:', stdout);
-      console.log('Python stderr:', stderr);
+      if (stderr) {
+        console.error(`[${requestId}] Python stderr:`, stderr);
+      }
       
-      const result = { summary: stdout };
+      console.log(`[${requestId}] Python stdout:`, stdout);
+
+      const result = { 
+        summary: stdout.trim(),
+        waitTime: timeSinceLastRequest < DELAY_BETWEEN_REQUESTS ? DELAY_BETWEEN_REQUESTS - timeSinceLastRequest : 0
+      };
       
       // Cache the result
-      cache.set(cacheKey, result);
+      cache.set(cacheKey, result.summary);
       
       return NextResponse.json(result);
-    } finally {
-      // Remove from processing set when done
-      processingRequests.delete(cacheKey);
+    } catch (error) {
+      console.error(`[${requestId}] Execution error:`, error);
+      throw error;
     }
     
   } catch (error) {
     console.error(`[${requestId}] Error:`, error);
     return NextResponse.json(
-      { error: 'Summarization failed', details: error.message },
+      { error: 'Summarization failed', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

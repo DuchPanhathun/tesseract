@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import Webcam from 'react-webcam';
-import '../style/CameraCapture.css';
+import '../styles/CameraCapture.css';
 
 const CameraCapture = ({ onCapture }) => {
   const webcamRef = useRef(null);

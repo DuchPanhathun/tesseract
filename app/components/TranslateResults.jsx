@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import '../style/ImageUploader.css'
+import '../styles/ImageUploader.css'
 
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);

@@ -19,51 +19,55 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
-const SummaryResults = ({ text }) => {
+const SummaryResults = ({ text, onSummaryComplete }) => {
   const [summary, setSummary] = useState('');
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [queuePosition, setQueuePosition] = useState(0);
   const previousTextRef = useRef('');
   const requestIdRef = useRef(0);
   const abortControllerRef = useRef(null);
   
-  // Debounce the input text
-  const debouncedText = useDebounce(text, 500);
-
   const getSummary = useCallback(async () => {
-    // Skip if text hasn't changed or is empty
-    if (!debouncedText?.trim() || debouncedText === previousTextRef.current) {
+    if (!text?.trim() || text.trim() === previousTextRef.current) {
       return;
     }
 
-    // Cancel any ongoing request
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
 
-    // Create new abort controller
     abortControllerRef.current = new AbortController();
     const currentRequestId = ++requestIdRef.current;
-    previousTextRef.current = debouncedText;
+    previousTextRef.current = text.trim();
 
     setIsLoading(true);
     setError(null);
 
     try {
+      console.log('Sending summary request for text:', text);
+
       const response = await axios.post('/api/summarize', 
+        { text },
         { 
-          text: debouncedText,
-          requestId: currentRequestId // Add request ID to help debug
-        },
-        { signal: abortControllerRef.current.signal }
+          signal: abortControllerRef.current.signal,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
       );
 
-      // Only update if this is still the most recent request
-      if (currentRequestId === requestIdRef.current) {
+      console.log('Received summary response:', response.data);
+
+      if (response.data.waitTime) {
+        setQueuePosition(Math.ceil(response.data.waitTime / 1000));
+      }
+
+      if (currentRequestId === requestIdRef.current && response.data.summary) {
         setSummary(response.data.summary);
+        onSummaryComplete?.(response.data.summary);
       }
     } catch (err) {
-      // Only show error if this is still the most recent request
       if (currentRequestId === requestIdRef.current) {
         console.error('Summary error:', err.response ? err.response.data : err.message);
         setError('Failed to get summary. Please try again later.');
@@ -71,21 +75,26 @@ const SummaryResults = ({ text }) => {
     } finally {
       if (currentRequestId === requestIdRef.current) {
         setIsLoading(false);
+        setQueuePosition(0);
       }
     }
-  }, [debouncedText]);
+  }, [text, onSummaryComplete]);
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
+    if (text) {
       getSummary();
-    }, 100); // Add small delay to prevent rapid consecutive calls
-
-    return () => clearTimeout(timeoutId);
-  }, [getSummary]);
+    }
+  }, [text, getSummary]);
 
   return (
     <div className="summary-container">
-      {isLoading && <div className="loading-indicator">Generating summary...</div>}
+      {isLoading && (
+        <div className="loading-indicator">
+          {queuePosition > 0 
+            ? `Waiting in queue (${queuePosition}s)...`
+            : 'Generating summary...'}
+        </div>
+      )}
       
       {error && (
         <div className="summary-error">

@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { saveAs } from 'file-saver';
 import CameraCapture from './CameraCapture';
-import '../style/ImageUploader.css';
+import '../styles/ImageUploader.css';
 import TranslateResults from './TranslateResults';
 import SummaryResults from './SummaryResults';
+import OverallSummary from './OverallSummary';
 
 const ImageUploader = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -16,6 +17,8 @@ const ImageUploader = () => {
   const [showUploadMore, setShowUploadMore] = useState(false);
   const [readyToProcess, setReadyToProcess] = useState(false);
   const [translatedTexts, setTranslatedTexts] = useState({});
+  const [summaries, setSummaries] = useState({});
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFileChange = (event) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -164,9 +167,15 @@ const ImageUploader = () => {
                           }}
                         />
                         {translatedTexts[result.file] && (
-                          <div className="translation-section">
-                            <SummaryResults text={translatedTexts[result.file]} />
-                          </div>
+                          <SummaryResults 
+                            text={translatedTexts[result.file]} 
+                            onSummaryComplete={(summary) => {
+                              setSummaries(prev => ({
+                                ...prev,
+                                [result.file]: summary
+                              }));
+                            }}
+                          />
                         )}
                       </div>
                     </div>
@@ -197,6 +206,14 @@ const ImageUploader = () => {
                   No, I'm Done
                 </button>
               </div>
+            </div>
+          )}
+          {Object.keys(summaries).length > 1 && (
+            <div className="overall-summary-section">
+              <h3>Overall Summary</h3>
+              <OverallSummary 
+                summaries={Object.values(summaries)} 
+              />
             </div>
           )}
         </div>

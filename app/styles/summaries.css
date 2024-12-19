@@ -1,0 +1,63 @@
+.summaries-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.individual-summaries {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.summary-section {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #e9ecef;
+}
+
+.summary-section h4 {
+  margin-bottom: 0.5rem;
+  color: #343a40;
+}
+
+.summary-content {
+  white-space: pre-wrap;
+  font-family: inherit;
+  margin: 0;
+}
+
+.overall-summary-section {
+  border-top: 2px solid #dee2e6;
+  padding-top: 2rem;
+  margin-top: 1rem;
+}
+
+.combine-summaries-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.combine-summaries-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.loading-indicator {
+  color: #6c757d;
+  margin: 1rem 0;
+}
+
+.summary-error {
+  color: #dc3545;
+  margin: 1rem 0;
+  padding: 0.5rem;
+  border: 1px solid #dc3545;
+  border-radius: 4px;
+} 
