@@ -74,8 +74,9 @@ const ImageUploader = () => {
   return (
     <div className="container">
       <div className="wrapper">
-        <h2 className="title">Image Text Extractor</h2>
         <div className="content">
+        <div className="image-extractor">
+          <h2 className="title">Image Text Extractor</h2>
           <div className="upload-section">
             <div className="file-input-wrapper">
               <input
@@ -93,7 +94,7 @@ const ImageUploader = () => {
               {showCamera ? 'Hide Camera' : 'Use Camera'}
             </button>
           </div>
-
+        </div>
           {selectedFiles.length > 0 && (
             <div className="selected-files">
               <h4>Selected Files ({selectedFiles.length}):</h4>
@@ -136,17 +137,6 @@ const ImageUploader = () => {
           
           {results.length > 0 && (
             <div className="results-section">
-              <div className="results-header">
-                <h3 className="results-title">OCR Results</h3>
-                <button onClick={handleDownload} className="download-button">
-                  <svg className="download-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Download Results
-                </button>
-              </div>
-              
               <div className="results-list">
                 {results.map((result, index) => (
                   <div key={index} className="result-item">
@@ -184,7 +174,14 @@ const ImageUploader = () => {
               </div>
             </div>
           )}
-
+          {Object.keys(summaries).length > 1 && (
+            <div className="overall-summary-section">
+              <h3>Overall Summary</h3>
+              <OverallSummary 
+                summaries={Object.values(summaries)} 
+              />
+            </div>
+          )}
           {showUploadMore && !isLoading && (
             <div className="upload-more-prompt">
               <p>Would you like to upload more files?</p>
@@ -206,14 +203,6 @@ const ImageUploader = () => {
                   No, I'm Done
                 </button>
               </div>
-            </div>
-          )}
-          {Object.keys(summaries).length > 1 && (
-            <div className="overall-summary-section">
-              <h3>Overall Summary</h3>
-              <OverallSummary 
-                summaries={Object.values(summaries)} 
-              />
             </div>
           )}
         </div>

@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
       console.log(`[${requestId}] Processing summary request`);
 
-      const pythonScript = process.env.PYTHON_SCRIPT_PATH || '/Users/thun/Desktop/Research-Document/llm_summary/chat.py';
+      const pythonScript = process.env.PYTHON_SCRIPT_PATH || '/Users/thun/Desktop/Research-Document/Project-Practicum/llm_summary/chat.py';
       // Properly escape the text for shell command
       const escapedText = text.replace(/"/g, '\\"').replace(/\n/g, ' ');
       const command = `python3 "${pythonScript}" "${escapedText}"`;

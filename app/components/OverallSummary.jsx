@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import '../styles/OverallSummary.css';
+import TranslatedSummary from './TranslatedSummary';
 
 const OverallSummary = ({ summaries }) => {
   const [combinedSummary, setCombinedSummary] = useState('');
@@ -84,12 +85,15 @@ const OverallSummary = ({ summaries }) => {
       )}
 
       {combinedSummary && (
-        <div className="summary-content">
-          <h4 className="summary-title">Overall Summary</h4>
-          <div className="summary-text">
-            {combinedSummary}
+        <>
+          <div className="summary-content">
+            <h4 className="summary-title">Overall Summary</h4>
+            <div className="summary-text">
+              {combinedSummary}
+            </div>
           </div>
-        </div>
+          <TranslatedSummary originalSummary={combinedSummary} />
+        </>
       )}
     </div>
   );

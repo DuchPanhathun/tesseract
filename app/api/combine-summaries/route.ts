@@ -25,22 +25,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ summary: cache.get(cacheKey) });
     }
 
-    const pythonScript = process.env.PYTHON_SCRIPT_PATH || '/Users/thun/Desktop/Research-Document/llm_summary/chat.py';
-    const summariesJson = JSON.stringify(summaries).replace(/"/g, '\\"');
-    const command = `python3 "${pythonScript}" --combine "${summariesJson}"`;
+    const pythonScript = process.env.PYTHON_SCRIPT_PATH || '/Users/thun/Desktop/Research-Document/Project-Practicum/llm_summary/chat.py';
     
-    console.log(`[${requestId}] Executing command:`, command);
+    // Write summaries to a temporary file instead of passing as command argument
+    const fs = require('fs');
+    const tempFile = `/tmp/summaries-${requestId}.json`;
     
-    const { stdout, stderr } = await execPromise(command);
-    
-    if (stderr) {
-      console.error(`[${requestId}] Python stderr:`, stderr);
-    }
+    try {
+      fs.writeFileSync(tempFile, JSON.stringify(summaries));
+      const command = `python3 "${pythonScript}" --combine "${tempFile}"`;
+      
+      console.log(`[${requestId}] Executing command:`, command);
+      
+      const { stdout, stderr } = await execPromise(command);
+      
+      if (stderr) {
+        console.error(`[${requestId}] Python stderr:`, stderr);
+      }
 
-    // Cache the result
-    cache.set(cacheKey, stdout);
-    
-    return NextResponse.json({ summary: stdout });
+      // Clean up temp file
+      fs.unlinkSync(tempFile);
+
+      // Cache the result
+      cache.set(cacheKey, stdout);
+      
+      return NextResponse.json({ summary: stdout });
+    } finally {
+      // Ensure temp file is cleaned up even if there's an error
+      try {
+        if (fs.existsSync(tempFile)) {
+          fs.unlinkSync(tempFile);
+        }
+      } catch (e) {
+        console.error(`[${requestId}] Error cleaning up temp file:`, e);
+      }
+    }
     
   } catch (error) {
     console.error(`[${requestId}] Error:`, error);

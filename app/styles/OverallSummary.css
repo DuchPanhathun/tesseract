@@ -94,4 +94,16 @@
   color: #334155;
   white-space: pre-wrap;
   font-size: 0.95rem;
+}
+
+.khmer-text {
+  font-family: 'Khmer OS System', 'Khmer OS', 'Khmer OS Battambang', sans-serif;
+  line-height: 1.6;
+  font-size: 1.1em;
+}
+
+.translated-summary-container {
+  margin-top: 20px;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
 } 
