@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       console.log(`[OCR] Image saved to ${filePath}`);
 
       // Run Tesseract OCR
-      const { stdout, stderr } = await execAsync(`tesseract "${filePath}" stdout -l khm --psm 1`);
+      const { stdout, stderr } = await execAsync(`tesseract "${filePath}" stdout -l eng+khm --psm 1`);
 
       if (stderr) {
         console.error(`[OCR] Tesseract Error: ${stderr}`);

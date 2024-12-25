@@ -52,10 +52,18 @@ const ImageUploader = () => {
       const response = await axios.post('/api/ocr', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setResults(prev => [...prev, { file: file.name, text: response.data.text }]);
+      setResults(prev => [...prev, { 
+        file: file.name, 
+        text: response.data.text,
+        language: response.data.language 
+      }]);
     } catch (error) {
       console.error('Error uploading image:', error);
-      setResults(prev => [...prev, { file: file.name, text: 'Error processing image' }]);
+      setResults(prev => [...prev, { 
+        file: file.name, 
+        text: 'Error processing image',
+        language: null 
+      }]);
     }
   };
 
@@ -144,18 +152,30 @@ const ImageUploader = () => {
                       <h4 className="result-filename">{result.file}</h4>
                       <div className="text-sections">
                         <div className="ocr-section">
-                          <h5>OCR Text:</h5>
+                          <h5>OCR Text ({result.language}):</h5>
                           <pre className="result-text">{result.text}</pre>
                         </div>
-                        <TranslateResults 
-                          text={result.text} 
-                          onTranslationComplete={(translatedText) => {
-                            setTranslatedTexts(prev => ({
-                              ...prev,
-                              [result.file]: translatedText
-                            }));
-                          }}
-                        />
+                        {result.language !== 'eng' ? (
+                          <TranslateResults 
+                            text={result.text} 
+                            onTranslationComplete={(translatedText) => {
+                              setTranslatedTexts(prev => ({
+                                ...prev,
+                                [result.file]: translatedText
+                              }));
+                            }}
+                          />
+                        ) : (
+                          <SummaryResults 
+                            text={result.text} 
+                            onSummaryComplete={(summary) => {
+                              setSummaries(prev => ({
+                                ...prev,
+                                [result.file]: summary
+                              }));
+                            }}
+                          />
+                        )}
                         {translatedTexts[result.file] && (
                           <SummaryResults 
                             text={translatedTexts[result.file]} 
