@@ -121,6 +121,7 @@ node_modules/
 
 # dependencies
 /node_modules
+dist/
 
 # next.js
 /.next/
@@ -138,8 +139,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
+# Environment
+.env
+.env.local
 .env*.local
-
 # vercel
 .vercel
+
+# Native module builds
+lib/tesseract/build/
+*.node

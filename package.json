@@ -2,18 +2,20 @@
   "name": "tesseract",
   "version": "1.0.0",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "build:tesseract": "cd lib/tesseract && node-gyp rebuild",
+    "build": "npm run build:tesseract && next build",
+    "dev": "npm run build:tesseract && next dev"
   },
   "dependencies": {
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "axios": "^1.7.7",
+    "bindings": "^1.5.0",
     "file-saver": "^2.0.5",
     "jsdom": "^25.0.1",
     "langdetect": "^0.2.1",
     "next": "^14.1.0",
+    "node-addon-api": "^8.3.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-webcam": "^7.2.0",
@@ -23,9 +25,13 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/request": "^2.48.12",
     "@types/uuid": "^10.0.0",
     "@types/xml2js": "^0.4.14",
     "autoprefixer": "^10.4.20",
+    "copy-webpack-plugin": "^12.0.2",
+    "node-gyp": "^11.0.0",
+    "node-loader": "^2.1.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
     "typescript": "5.6.2"

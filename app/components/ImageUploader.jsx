@@ -13,12 +13,12 @@ const ImageUploader = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
-  const [showUploadMore, setShowUploadMore] = useState(false);
-  const [readyToProcess, setReadyToProcess] = useState(false);
-  const [translatedTexts, setTranslatedTexts] = useState({});
-  const [summaries, setSummaries] = useState({});
-  const [isProcessing, setIsProcessing] = useState(false);
+  // const [showCamera, setShowCamera] = useState(false);
+  // const [showUploadMore, setShowUploadMore] = useState(false);
+  // const [readyToProcess, setReadyToProcess] = useState(false);
+  // const [translatedTexts, setTranslatedTexts] = useState({});
+  // const [summaries, setSummaries] = useState({});
+  // const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFileChange = (event) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -32,15 +32,15 @@ const ImageUploader = () => {
 
   const processFiles = async () => {
     setIsLoading(true);
-    setShowUploadMore(false);
-    setReadyToProcess(false);
+    // setShowUploadMore(false);
+    // setReadyToProcess(false);
     
     for (const file of selectedFiles) {
       await handleFileUpload(file);
     }
     
     setIsLoading(false);
-    setShowUploadMore(true);
+    // setShowUploadMore(true);
     setSelectedFiles([]); // Clear the files after processing
   };
 
@@ -67,17 +67,17 @@ const ImageUploader = () => {
     }
   };
 
-  const handleDownload = () => {
-    if (results.length > 0) {
-      const combinedText = results.map(r => `File: ${r.file}\n${r.text}\n\n`).join('---\n');
-      const blob = new Blob([combinedText], { type: 'application/msword' });
-      saveAs(blob, 'ocr_results.doc');
-    }
-  };
+  // const handleDownload = () => {
+  //   if (results.length > 0) {
+  //     const combinedText = results.map(r => `File: ${r.file}\n${r.text}\n\n`).join('---\n');
+  //     const blob = new Blob([combinedText], { type: 'application/msword' });
+  //     saveAs(blob, 'ocr_results.doc');
+  //   }
+  // };
 
-  const toggleCamera = () => {
-    setShowCamera(!showCamera);
-  };
+  // const toggleCamera = () => {
+  //   setShowCamera(!showCamera);
+  // };
 
   return (
     <div className="container">
@@ -95,12 +95,12 @@ const ImageUploader = () => {
                 className="file-input"
               />
             </div>
-            <button
+            {/* <button
               onClick={toggleCamera}
               className="camera-button"
             >
               {showCamera ? 'Hide Camera' : 'Use Camera'}
-            </button>
+            </button> */}
           </div>
         </div>
           {selectedFiles.length > 0 && (
@@ -114,7 +114,8 @@ const ImageUploader = () => {
             </div>
           )}
 
-          {readyToProcess && !isLoading && (
+          {/* {readyToProcess && !isLoading && ( */}
+          {selectedFiles.length > 0 && !isLoading && (
             <div className="process-section">
               <button 
                 onClick={processFiles}
@@ -125,7 +126,7 @@ const ImageUploader = () => {
             </div>
           )}
 
-          {showCamera && (
+          {/* {showCamera && (
             <div className="camera-container">
               <CameraCapture 
                 onCapture={(file) => {
@@ -134,7 +135,7 @@ const ImageUploader = () => {
                 }} 
               />
             </div>
-          )}
+          )} */}
 
           {isLoading && (
             <div className="loading">
@@ -155,7 +156,7 @@ const ImageUploader = () => {
                           <h5>OCR Text ({result.language}):</h5>
                           <pre className="result-text">{result.text}</pre>
                         </div>
-                        {result.language !== 'eng' ? (
+                        {/* {result.language !== 'eng' ? (
                           <TranslateResults 
                             text={result.text} 
                             onTranslationComplete={(translatedText) => {
@@ -186,7 +187,7 @@ const ImageUploader = () => {
                               }));
                             }}
                           />
-                        )}
+                        )} */}
                       </div>
                     </div>
                   </div>
@@ -194,7 +195,7 @@ const ImageUploader = () => {
               </div>
             </div>
           )}
-          {Object.keys(summaries).length > 1 && (
+          {/* {Object.keys(summaries).length > 1 && (
             <div className="overall-summary-section">
               <h3>Overall Summary</h3>
               <OverallSummary 
@@ -224,7 +225,7 @@ const ImageUploader = () => {
                 </button>
               </div>
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </div>

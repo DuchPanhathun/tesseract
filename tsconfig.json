@@ -37,5 +37,6 @@
 , "app/components/ImageUploader.jsx"  ],
   "exclude": [
     "node_modules"
-  ]
+  ],
+  "allowSyntheticDefaultImports": true
 }
