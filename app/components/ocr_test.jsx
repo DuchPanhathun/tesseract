@@ -42,7 +42,7 @@ export default function OCRTest() {
     formData.append('image', selectedFile);
 
     try {
-      const response = await axios.post('/api/ocr', formData, {
+      const response = await axios.post('/api/font-position', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setResults(response.data.words || []);
@@ -239,15 +239,18 @@ export default function OCRTest() {
         }
 
         .text-line {
-          margin: 0.5em 0;
+          margin: 1em 0;
           line-height: 1.6;
           text-align: justify;
+          position: relative;
+          width: 100%;
         }
 
         .word-item {
           display: inline-block;
           position: relative;
           margin-right: 4px;
+          vertical-align: baseline;
         }
 
         .word-details {

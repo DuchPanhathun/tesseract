@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 
-const ImageUploader = dynamic(() => import('./components/ocr_test.jsx'), { ssr: false });
+const ImageUploader = dynamic(() => import('./components/BarSelector.jsx'), { ssr: false });
 
 export default function UploadPage() {
   return (

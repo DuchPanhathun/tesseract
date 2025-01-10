@@ -26,6 +26,9 @@ struct WordInfo {
     int width;      // width of word
     int height;     // height of word
     int pageWidth;  // width of page
+    float baseline;
+    bool isParagraphStart;
+    bool isParagraphEnd;
 };
 
 // Helper function to sort by font size in descending order
@@ -206,19 +209,30 @@ Napi::Object AnalyzeImageGrouped(const Napi::CallbackInfo& info) {
 
         // Use vector instead of map to maintain order
         std::vector<WordInfo> wordList;
-        int currentLine = 1;
+        int currentLine = 0;
         int wordPosition = 0;
+        int lastY = -1;
+        const int LINE_HEIGHT_THRESHOLD = 10;
 
         tesseract::ResultIterator* ri = api->GetIterator();
         if (ri != 0) {
             do {
-                if (ri->IsAtBeginningOf(tesseract::RIL_TEXTLINE)) {
-                    currentLine++;
-                    wordPosition = 0;
-                }
-
                 const char* word = ri->GetUTF8Text(tesseract::RIL_WORD);
                 if (word != 0) {
+                    int x1, y1, x2, y2;
+                    ri->BoundingBox(tesseract::RIL_WORD, &x1, &y1, &x2, &y2);
+
+                    // Check if this is a new line based on Y position
+                    if (lastY == -1 || abs(y1 - lastY) > LINE_HEIGHT_THRESHOLD) {
+                        currentLine++;
+                        wordPosition = 0;
+                        lastY = y1;
+                    }
+
+                    // Get paragraph information
+                    bool isParagraphStart = ri->IsAtBeginningOf(tesseract::RIL_BLOCK);
+                    bool isParagraphEnd = ri->IsAtFinalElement(tesseract::RIL_BLOCK, tesseract::RIL_WORD);
+
                     const char *font_name;
                     bool bold, italic, underlined, monospace, serif, smallcaps;
                     int pointsize, font_id;
@@ -232,10 +246,6 @@ Napi::Object AnalyzeImageGrouped(const Napi::CallbackInfo& info) {
                     bool isSymbol = ri->SymbolIsSuperscript() || ri->SymbolIsSubscript();
                     float confidence = ri->Confidence(tesseract::RIL_WORD);
                     const char* lang = ri->WordRecognitionLanguage();
-
-                    // Get position information
-                    int x1, y1, x2, y2;
-                    ri->BoundingBox(tesseract::RIL_WORD, &x1, &y1, &x2, &y2);
 
                     // Get page dimensions using Leptonica functions
                     l_int32 pageWidth = pixGetWidth(pix);
@@ -258,6 +268,8 @@ Napi::Object AnalyzeImageGrouped(const Napi::CallbackInfo& info) {
                     wordInfo.confidence = confidence;
                     wordInfo.lineNumber = currentLine;
                     wordInfo.wordPosition = wordPosition++;
+                    wordInfo.isParagraphStart = isParagraphStart;
+                    wordInfo.isParagraphEnd = isParagraphEnd;
                     
                     wordInfo.x = x1;
                     wordInfo.y = y1;

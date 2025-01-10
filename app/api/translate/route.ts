@@ -14,13 +14,19 @@ async function delay(ms: number) {
 
 async function makeTranslationRequest(body: any, retryCount = 0): Promise<Response> {
   try {
-    console.log(`Making translation request attempt ${retryCount + 1}`);
+    console.log(`Making translation request attempt ${retryCount + 1}`, {
+      src_lang: body.src_lang,
+      tgt_lang: body.tgt_lang,
+      text_length: body.input_text?.[0]?.length
+    });
+
     const response = await fetch('https://translatekh.mptc.gov.kh/', {
       method: 'POST',
       headers: {
         'accept': 'application/json, text/plain, */*',
         'accept-language': 'en-US,en;q=0.9',
         'content-type': 'application/json',
+        'cookie': '_ga_D6SBLZ6DWW=GS1.1.1736496100.1.0.1736496100.0.0.0; _ga=GA1.1.679404825.1736496101',
         'origin': 'https://translatekh.mptc.gov.kh',
         'priority': 'u=1, i',
         'referer': 'https://translatekh.mptc.gov.kh/',
@@ -33,30 +39,29 @@ async function makeTranslationRequest(body: any, retryCount = 0): Promise<Respon
         'user-agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36 Edg/131.0.0.0'
       },
       body: JSON.stringify({
-        src_lang: body.src_lang,
-        tgt_lang: body.tgt_lang,
+        src_lang: body.src_lang || "kh",
+        tgt_lang: body.tgt_lang || "eng",
         navigator: {
           platform: "MacIntel",
           userAgent: "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36 Edg/131.0.0.0"
         },
-        input_text: body.input_text
+        input_text: body.input_text || [""]
       })
     });
 
     if (!response.ok) {
       console.error(`Request failed with status ${response.status}`);
       const errorText = await response.text();
-      console.error('Error response:', errorText);
+      console.error('Error response body:', errorText);
       
       if (retryCount < MAX_RETRIES) {
         console.log(`Attempt ${retryCount + 1} failed, waiting ${DELAY_BETWEEN_REQUESTS/1000} seconds before retry...`);
         await delay(DELAY_BETWEEN_REQUESTS);
         return makeTranslationRequest(body, retryCount + 1);
       }
-      throw new Error(`API responded with status ${response.status}: ${errorText}`);
+      throw new Error(`Translation API error (${response.status}): ${errorText}`);
     }
 
-    console.log(`Translation request ${retryCount + 1} successful`);
     return response;
   } catch (error) {
     console.error(`Translation attempt ${retryCount + 1} error:`, error);
@@ -77,6 +82,9 @@ export async function POST(request: NextRequest) {
   try {
     const rawText = await request.text();
     const body = rawText ? JSON.parse(rawText) : {};
+
+    // Add a small initial delay to avoid overwhelming the server
+    await delay(1000);
 
     if (!body?.input_text?.[0]?.trim()) {
       console.log(`[${requestId}] Empty input text, skipping translation`);
