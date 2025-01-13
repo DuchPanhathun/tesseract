@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import axios from 'axios';
+import "../styles/ocr_test.css"
 
 export default function OCRTest() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -73,7 +74,7 @@ export default function OCRTest() {
   };
 
   return (
-    <div className="container">
+    <div className="container-test-ocr">
       <div
         className="drop-zone"
         onDrop={handleDrop}
@@ -182,116 +183,6 @@ export default function OCRTest() {
           </div>
         </div>
       )}
-
-      <style jsx>{`
-        .container {
-          padding: 20px;
-          max-width: 800px;
-          margin: 0 auto;
-        }
-
-        .drop-zone {
-          border: 2px dashed #ccc;
-          padding: 20px;
-          text-align: center;
-          cursor: pointer;
-          margin-bottom: 20px;
-          min-height: 200px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .preview-image {
-          max-width: 100%;
-          max-height: 300px;
-        }
-
-        .process-button {
-          background-color: #0070f3;
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          border-radius: 5px;
-          cursor: pointer;
-          width: 100%;
-          margin-bottom: 20px;
-        }
-
-        .process-button:disabled {
-          background-color: #ccc;
-          cursor: not-allowed;
-        }
-
-        .results-container {
-          margin-top: 20px;
-          padding: 20px;
-          border: 1px solid #eaeaea;
-          border-radius: 5px;
-          background: #f9f9f9;
-        }
-
-        .text-content {
-          background: white;
-          padding: 20px;
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .text-line {
-          margin: 1em 0;
-          line-height: 1.6;
-          text-align: justify;
-          position: relative;
-          width: 100%;
-        }
-
-        .word-item {
-          display: inline-block;
-          position: relative;
-          margin-right: 4px;
-          vertical-align: baseline;
-        }
-
-        .word-details {
-          display: none;
-          position: absolute;
-          bottom: 100%;
-          left: 50%;
-          transform: translateX(-50%);
-          background: #333;
-          color: white;
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-size: 12px;
-          white-space: nowrap;
-          z-index: 1000;
-          min-width: 200px;
-        }
-
-        .word-item:hover .word-details {
-          display: block;
-        }
-
-        .font-info, .position-info, .confidence {
-          display: block;
-          margin: 2px 0;
-          text-align: left;
-        }
-
-        h2 {
-          margin-bottom: 20px;
-          color: #333;
-        }
-
-        .position-coords {
-          display: block;
-          margin: 2px 0;
-          text-align: left;
-          font-size: 11px;
-          color: #ddd;
-        }
-      `}</style>
     </div>
   );
 }
