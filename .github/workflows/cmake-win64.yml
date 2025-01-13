@@ -4,12 +4,12 @@ name: cmake-win64
 on:
   #push:
   schedule:
-    - cron: 0 23 * * *
+    - cron: 0 5 * * *
   workflow_dispatch:
 
 env:
   ILOC: d:/a/local
-  png_ver: 1643
+  png_ver: 1644
 
 jobs:
   build:
@@ -37,9 +37,9 @@ jobs:
         run: |
              mkdir ${{env.ILOC}}
 
-      - name: Uninstall Perl
-        run: |
-          choco uninstall strawberryperl
+      #- name: Uninstall Perl
+      #  run: |
+      #    choco uninstall strawberryperl
 
       - name: Build and Install zlib-ng
         shell: cmd
@@ -117,8 +117,8 @@ jobs:
       - name: Display Tesseract Version and Test Command Line Usage
         shell: cmd
         run: |
-          curl -L https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata --output ${{env.ILOC}}/share/tessdata/eng.traineddata
-          curl -L https://github.com/tesseract-ocr/tessdata/raw/main/osd.traineddata --output ${{env.ILOC}}/share/tessdata/osd.traineddata
+          curl -sSL https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata --output ${{env.ILOC}}/share/tessdata/eng.traineddata
+          curl -sSL https://github.com/tesseract-ocr/tessdata/raw/main/osd.traineddata --output ${{env.ILOC}}/share/tessdata/osd.traineddata
           echo "Setting TESSDATA_PREFIX..."
           set TESSDATA_PREFIX=${{env.ILOC}}/share/tessdata
           echo "Setting PATH..."

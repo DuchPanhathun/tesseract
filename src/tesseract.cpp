@@ -112,6 +112,9 @@ static void PrintVersionInfo() {
 #if defined(HAVE_NEON) || defined(__aarch64__)
   if (tesseract::SIMDDetect::IsNEONAvailable())
     printf(" Found NEON\n");
+#elif defined(HAVE_RVV)
+  if (tesseract::SIMDDetect::IsRVVAvailable())
+    printf(" Found RVV\n");
 #else
   if (tesseract::SIMDDetect::IsAVX512BWAvailable()) {
     printf(" Found AVX512BW\n");
@@ -151,44 +154,41 @@ static void PrintVersionInfo() {
 }
 
 static void PrintHelpForPSM() {
-  const char *msg =
-      "Page segmentation modes:\n"
-      "  0    Orientation and script detection (OSD) only.\n"
-      "  1    Automatic page segmentation with OSD.\n"
-      "  2    Automatic page segmentation, but no OSD, or OCR. (not "
+  printf(
+      "Page segmentation modes (PSM):\n"
+      "  0|osd_only                Orientation and script detection (OSD) only.\n"
+      "  1|auto_osd                Automatic page segmentation with OSD.\n"
+      "  2|auto_only               Automatic page segmentation, but no OSD, or OCR. (not "
       "implemented)\n"
-      "  3    Fully automatic page segmentation, but no OSD. (Default)\n"
-      "  4    Assume a single column of text of variable sizes.\n"
-      "  5    Assume a single uniform block of vertically aligned text.\n"
-      "  6    Assume a single uniform block of text.\n"
-      "  7    Treat the image as a single text line.\n"
-      "  8    Treat the image as a single word.\n"
-      "  9    Treat the image as a single word in a circle.\n"
-      " 10    Treat the image as a single character.\n"
-      " 11    Sparse text. Find as much text as possible in no"
+      "  3|auto                    Fully automatic page segmentation, but no OSD. (Default)\n"
+      "  4|single_column           Assume a single column of text of variable sizes.\n"
+      "  5|single_block_vert_text  Assume a single uniform block of vertically aligned text.\n"
+      "  6|single_block            Assume a single uniform block of text.\n"
+      "  7|single_line             Treat the image as a single text line.\n"
+      "  8|single_word             Treat the image as a single word.\n"
+      "  9|circle_word             Treat the image as a single word in a circle.\n"
+      " 10|single_char             Treat the image as a single character.\n"
+      " 11|sparse_text             Sparse text. Find as much text as possible in no"
       " particular order.\n"
-      " 12    Sparse text with OSD.\n"
-      " 13    Raw line. Treat the image as a single text line,\n"
-      "       bypassing hacks that are Tesseract-specific.\n";
+      " 12|sparse_text_osd         Sparse text with OSD.\n"
+      " 13|raw_line                Raw line. Treat the image as a single text line,\n"
+      "                            bypassing hacks that are Tesseract-specific.\n"
+  );
 
 #ifdef DISABLED_LEGACY_ENGINE
-  const char *disabled_osd_msg = "\nNOTE: The OSD modes are currently disabled.\n";
-  printf("%s%s", msg, disabled_osd_msg);
-#else
-  printf("%s", msg);
+  printf("\nNOTE: The OSD modes are currently disabled.\n");
 #endif
 }
 
 #ifndef DISABLED_LEGACY_ENGINE
 static void PrintHelpForOEM() {
-  const char *msg =
-      "OCR Engine modes:\n"
-      "  0    Legacy engine only.\n"
-      "  1    Neural nets LSTM engine only.\n"
-      "  2    Legacy + LSTM engines.\n"
-      "  3    Default, based on what is available.\n";
-
-  printf("%s", msg);
+  printf(
+      "OCR Engine modes (OEM):\n"
+      "  0|tesseract_only          Legacy engine only.\n"
+      "  1|lstm_only               Neural nets LSTM engine only.\n"
+      "  2|tesseract_lstm_combined Legacy + LSTM engines.\n"
+      "  3|default                 Default, based on what is available.\n"
+  );
 }
 #endif // ndef DISABLED_LEGACY_ENGINE
 
@@ -218,9 +218,9 @@ static void PrintHelpExtra(const char *program) {
       "  -l LANG[+LANG]        Specify language(s) used for OCR.\n"
       "  -c VAR=VALUE          Set value for config variables.\n"
       "                        Multiple -c arguments are allowed.\n"
-      "  --psm NUM             Specify page segmentation mode.\n"
+      "  --psm PSM|NUM         Specify page segmentation mode.\n"
 #ifndef DISABLED_LEGACY_ENGINE
-      "  --oem NUM             Specify OCR Engine mode.\n"
+      "  --oem OEM|NUM         Specify OCR Engine mode.\n"
 #endif
       "NOTE: These options must occur before any configfile.\n"
       "\n",
@@ -273,32 +273,6 @@ static void PrintHelpMessage(const char *program) {
       program, program, program);
 }
 
-static bool SetVariablesFromCLArgs(tesseract::TessBaseAPI &api, int argc, char **argv) {
-  bool success = true;
-  char opt1[256], opt2[255];
-  for (int i = 0; i < argc; i++) {
-    if (strcmp(argv[i], "-c") == 0 && i + 1 < argc) {
-      strncpy(opt1, argv[i + 1], 255);
-      opt1[255] = '\0';
-      char *p = strchr(opt1, '=');
-      if (!p) {
-        fprintf(stderr, "Missing = in configvar assignment\n");
-        success = false;
-        break;
-      }
-      *p = 0;
-      strncpy(opt2, strchr(argv[i + 1], '=') + 1, sizeof(opt2) - 1);
-      opt2[254] = 0;
-      ++i;
-
-      if (!api.SetVariable(opt1, opt2)) {
-        fprintf(stderr, "Could not set option: %s=%s\n", opt1, opt2);
-      }
-    }
-  }
-  return success;
-}
-
 static void PrintLangsList(tesseract::TessBaseAPI &api) {
   std::vector<std::string> languages;
   api.GetAvailableLanguagesAsVector(&languages);
@@ -332,10 +306,61 @@ static void FixPageSegMode(tesseract::TessBaseAPI &api, tesseract::PageSegMode p
 
 static bool checkArgValues(int arg, const char *mode, int count) {
   if (arg >= count || arg < 0) {
-    printf("Invalid %s value, please enter a number between 0-%d\n", mode, count - 1);
+    printf("Invalid %s value, please enter a symbolic %s value or a number between 0-%d\n", mode, mode, count - 1);
     return false;
   }
   return true;
+}
+
+// Convert a symbolic or numeric string to an OEM value.
+static int stringToOEM(const std::string arg) {
+  std::map<std::string, int> oem_map = {
+    {"0", 0},
+    {"1", 1},
+    {"2", 2},
+    {"3", 3},
+    {"tesseract_only", 0},
+    {"lstm_only", 1},
+    {"tesseract_lstm_combined", 2},
+    {"default", 3},
+  };
+  auto it = oem_map.find(arg);
+  return it == oem_map.end() ? -1 : it->second;
+}
+
+static int stringToPSM(const std::string arg) {
+  std::map<std::string, int> psm_map = {
+    {"0", 0},
+    {"1", 1},
+    {"2", 2},
+    {"3", 3},
+    {"4", 4},
+    {"5", 5},
+    {"6", 6},
+    {"7", 7},
+    {"8", 8},
+    {"9", 9},
+    {"10", 10},
+    {"11", 11},
+    {"12", 12},
+    {"13", 13},
+    {"osd_only", 0},
+    {"auto_osd", 1},
+    {"auto_only", 2},
+    {"auto", 3},
+    {"single_column", 4},
+    {"single_block_vert_text", 5},
+    {"single_block", 6},
+    {"single_line", 7},
+    {"single_word", 8},
+    {"circle_word", 9},
+    {"single_char", 10},
+    {"sparse_text", 11},
+    {"sparse_text_osd", 12},
+    {"raw_line", 13},
+  };
+  auto it = psm_map.find(arg);
+  return it == psm_map.end() ? -1 : it->second;
 }
 
 // NOTE: arg_i is used here to avoid ugly *i so many times in this function
@@ -410,14 +435,15 @@ static bool ParseArgs(int argc, char **argv, const char **lang, const char **ima
       noocr = true;
       *list_langs = true;
     } else if (strcmp(argv[i], "--psm") == 0 && i + 1 < argc) {
-      if (!checkArgValues(atoi(argv[i + 1]), "PSM", tesseract::PSM_COUNT)) {
+      int psm = stringToPSM(argv[i + 1]);
+      if (!checkArgValues(psm, "PSM", tesseract::PSM_COUNT)) {
         return false;
       }
-      *pagesegmode = static_cast<tesseract::PageSegMode>(atoi(argv[i + 1]));
+      *pagesegmode = static_cast<tesseract::PageSegMode>(psm);
       ++i;
     } else if (strcmp(argv[i], "--oem") == 0 && i + 1 < argc) {
 #ifndef DISABLED_LEGACY_ENGINE
-      int oem = atoi(argv[i + 1]);
+      int oem = stringToOEM(argv[i + 1]);
       if (!checkArgValues(oem, "OEM", tesseract::OEM_COUNT)) {
         return false;
       }
@@ -433,7 +459,16 @@ static bool ParseArgs(int argc, char **argv, const char **lang, const char **ima
       *print_fonts_table = true;
 #endif  // ndef DISABLED_LEGACY_ENGINE
     } else if (strcmp(argv[i], "-c") == 0 && i + 1 < argc) {
-      // handled properly after api init
+      const std::string argument(argv[i + 1]);
+      const auto equal_pos = argument.find('=');
+      if (equal_pos == std::string::npos) {
+          throw std::invalid_argument("Missing '=' in configvar assignment");
+      }
+      // Extract key and value
+      const std::string key = argument.substr(0, equal_pos);
+      const std::string value = argument.substr(equal_pos + 1);
+      vars_vec->push_back(key);
+      vars_values->push_back(value);
       ++i;
     } else if (*image == nullptr) {
       *image = argv[i];
@@ -613,7 +648,7 @@ static void PreloadRenderers(tesseract::TessBaseAPI &api,
  *
  **********************************************************************/
 
-int main(int argc, char **argv) {
+int main1(int argc, char **argv) {
 #if defined(__USE_GNU) && defined(HAVE_FEENABLEEXCEPT)
   // Raise SIGFPE.
 #  if defined(__clang__)
@@ -683,10 +718,6 @@ int main(int argc, char **argv) {
 
   const int init_failed = api.Init(datapath, lang, enginemode, &(argv[arg_i]), argc - arg_i,
                                    &vars_vec, &vars_values, false);
-
-  if (!SetVariablesFromCLArgs(api, argc, argv)) {
-    return EXIT_FAILURE;
-  }
 
   // SIMD settings might be overridden by config variable.
   tesseract::SIMDDetect::Update();
@@ -820,4 +851,15 @@ int main(int argc, char **argv) {
   }
 
   return ret_val;
+}
+
+int main(int argc, char **argv) {
+  try {
+    return main1(argc, argv);
+  } catch (std::exception &e) {
+    std::cerr << "exception: " << e.what() << "\n";
+  } catch (...) {
+    std::cerr << "unknown exception\n";
+  }
+  return 1;
 }

@@ -14,8 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - { name: macos-12-clang-14-autotools, os: macos-12, cxx: clang++ }
-          #- { name: macos-12-gcc-11-autotools, os: macos-12, cxx: g++-11 }
+          - { name: macos-latest-clang-autotools, os: macos-latest, cxx: clang++ }
 
     steps:
     - uses: actions/checkout@v4
@@ -30,11 +29,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-           brew install autoconf automake
-           brew install leptonica
-           brew install pango icu4c
-           brew install cabextract
-           brew install libarchive curl
+           brew install autoconf automake cabextract libtool
+           brew install curl icu4c leptonica libarchive pango
 
     - name: Setup Tesseract
       run: |
@@ -114,7 +110,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - { name: macos-12-clang-14-autotools, os: macos-12, cxx: clang++ }
+          - { name: macos-latest-clang-autotools, os: macos-latest, cxx: clang++ }
 
     steps:
     - uses: actions/checkout@v4
@@ -129,7 +125,7 @@ jobs:
 
     - name: Install Macports
       run: |
-        curl -LO https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci; source ./macports-ci install
+        curl -sSLO https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci; source ./macports-ci install
         # --remove-brew does not remove the Homebrew entries in bin,
         # so remove them now.
         rm -v $(brew --prefix)/bin/*
